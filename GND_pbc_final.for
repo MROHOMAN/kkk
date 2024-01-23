@@ -92,7 +92,7 @@ c
       common /XtalRootFile/ rootName
 
       data  filePath
-     & /'C:/PBC_6x6x6_6th_run/'/
+     & /'C:/PBC_6x6x6/'/
       data  rootName / 'test' /
 
       data  numel  /1/, 
@@ -11674,8 +11674,8 @@ c             call UpdateCoordinates(coords, npt, noel)
      &                         forden_n, incr, sub, sub_n)
              
          if ( incr .gt. 1) then
-				call CalculateGND2(gamdot, numslip, npt, noel, gndden, 
-     &                        gndden_n, incr, dtime)
+c				call CalculateGND2(gamdot, numslip, npt, noel, gndden, 
+c     &                        gndden_n, incr, dtime)
          endif
                  
       call UpdateKappa(kappa, forden, gndden, numslip, sub, incr, numgrn)
@@ -16567,16 +16567,17 @@ c
       real*8  globalgrainsize(MAX_GRN)
       common  /newAddParameters/ globalgrainsize 
 	  save    /newAddParameters/
-      real*8  alpha, G, b, D, k, kHP
+      real*8  alpha, G, b, D, k, kHP, alpha_ref, den_ref, p,q   ! p, q are for alpha for the eq. 5 in the paper Devincre-2019
     
       
       PARAMETER ( alpha=0.5)    ! Changed from 0.3
-      PARAMETER ( G=42d3 )
+      PARAMETER ( G=7.6d4 )
       PARAMETER ( b=2.56d-10 )
       PARAMETER ( k=0.086 )
-      PARAMETER ( kHP=0.03)     ! changed from 0.146
-      PARAMETER ( D=55.4*1d-6 )
-	  
+      PARAMETER ( kHP=0.03 )
+      PARAMETER ( D=50.d-9 )
+	  PARAMETER ( alpha_ref = 0.405 )
+	  PARAMETER ( den_ref = 10.d12)
 	  
 	 ! Initial dislocation density consists of forden(is) + gndden(is)
 c
@@ -16586,6 +16587,8 @@ c
 		!p = (log10(1/(alpha_ref*b*sqrt(forden(is) + gndden(is)))))
 	    !q = (log10(1/(alpha_ref*b*sqrt(den_ref))))
 	    !alpha = (p/q)*alpha_ref
+!		alpha = (log10(1/(alpha_ref*b*sqrt(forden(is) + gndden(is) 
+ !    &         )))/(log10(1/(alpha_ref*b*sqrt(den_ref))))*alpha_ref)
 		tau_for(is) = alpha*G*b*sqrt(forden(is) + gndden(is))
      &                + kHP/sqrt(globalgrainsize(GIndex)) 
            
@@ -16708,7 +16711,7 @@ c---------------------------------------------------------------------72
 c---------- find neighbor info in Z direction
 c---------------------------------------------------------------------72    
      
-      if ( mod(noel,ms*ms) .LE. ms ) then     !Z positive surface
+      if ( (noel .GE. 1) .and. (noel .LE. ms**3-ms**2+2*ms) .and. (mod(noel,ms**2) .GT. 0).and. (mod(noel,ms**2) .LE. ms)) then     !Z positive surface
         d_z = 2.0 * (globalcoords0(3, 1, noel) -  
      &   globalcoords0(3, 1, (noel+ms)) )*uu
       call EqualTensors2(plasdef0(1, 1, 1, (noel+ms)), Fp_z1(1,1), 9)
@@ -16730,9 +16733,7 @@ c---------------------------------------------------------------------72
       call EqualTensors2(plasdef0(1, 1, 1, (noel-ms)), Fp_z2(1,1), 9)
      
       endif
-      
-	  
-	  d_x=2*uu
+      d_x=2*uu
 	  d_y=2*uu
 	  d_z=2*uu
 c---------------------------------------------------------------------72
@@ -16788,9 +16789,8 @@ c---------------------------------------------------------------------72
      &                    DIMS)
           rho_GND(is) = sqrt(rho_GNDs(is)**2 + rho_GNDet(is)**2 + 
      &                       rho_GNDen(is)**2)
-	 
-	 
-          rho_GND(is) =1d9*rho_GND(is)
+          
+		  rho_GND(is) = 1d6*rho_GND(is)
           gndden(is) = gndden_n(is) + rho_GND(is)*dtime
 
       enddo
@@ -16941,7 +16941,7 @@ c
 	  !f ((noel .GE. 1).and. (noel .LE. 500 then ! .and. (mod(noel, 100) .NE. 0) ) then
 	  if ((noel .GE. 1) .and. (noel .LE.ms**3)) then
 	  !if ((mod(noel, 100) .LT. 51).and. (mod(noel, 100) .GT. 0) ) then ! .and. (noel .LE.500)) then  ! works
-		globalgrainsize(noel) =17.77*1.d-6
+		globalgrainsize(noel) =55.4*1.d-6
         !write(XTAL_O, *) 'noel  =  ', noel	  
 		!write(XTAL_O, *) 'globalgrainsize(noel)  =  ', globalgrainsize(noel)
 	  !elseif ((noel .GE. 15) .and. (noel .LE.27)) then
